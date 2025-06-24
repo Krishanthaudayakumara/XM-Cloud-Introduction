@@ -20,15 +20,15 @@ public class MyDataEditViewComponent(IViewModelBinder modelBinder, MvpSelections
         MyDataEditModel model = await ModelBinder.Bind<MyDataEditModel>(ViewContext);
         if (!model.IsEditing)
         {
-            Response<User>? userResponse = null;
-            if (model.IsEdit && ModelState.IsValid)
+            Response<User>? userResponse = null;            if (model.IsEdit && ModelState.IsValid)
             {
                 User updatedUser = new(Guid.Empty)
                 {
                     Name = model.Name ?? string.Empty,
                     Email = model.Email ?? string.Empty,
                     Country = new Country(model.CountryId),
-                    ImageType = model.ImageType
+                    // Clear Twitter ImageType if selected, as Twitter API is no longer available
+                    ImageType = model.ImageType.ToString() == "Twitter" ? (ImageType)Enum.Parse(typeof(ImageType), "None") : model.ImageType
                 };
 
                 userResponse = await Client.UpdateCurrentUserAsync(updatedUser);
@@ -36,15 +36,14 @@ public class MyDataEditViewComponent(IViewModelBinder modelBinder, MvpSelections
             else if (!model.IsEdit)
             {
                 userResponse = await Client.GetCurrentUserAsync();
-            }
-
-            if (userResponse is { StatusCode: HttpStatusCode.OK, Result: not null })
+            }            if (userResponse is { StatusCode: HttpStatusCode.OK, Result: not null })
             {
                 User user = userResponse.Result;
                 model.Name = user.Name;
                 model.Email = user.Email;
                 model.CountryId = user.Country?.Id ?? 0;
-                model.ImageType = user.ImageType;
+                // Clear Twitter ImageType if selected, as Twitter API is no longer available
+                model.ImageType = user.ImageType.ToString() == "Twitter" ? (ImageType)Enum.Parse(typeof(ImageType), "None") : user.ImageType;
                 model.ImageUri = user.ImageUri;
                 ModelState.Clear();
             }
